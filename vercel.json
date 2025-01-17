@@ -1,0 +1,9 @@
+{
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ],
+  "buildCommand": "ng build",
+  "outputDirectory": "dist/newsapi",
+  "framework": "angular"
+}
