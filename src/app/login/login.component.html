@@ -1,0 +1,51 @@
+<div class="login-page">
+  <nav class="nav-container">
+    <button (click)="navigateHome()" class="nav-logo">NewsApp</button>
+    <div class="nav-links">
+      <button (click)="navigateHome()" class="nav-link">Home</button>
+    </div>
+  </nav>
+  
+  <div class="login-container">
+    <div class="login-card">
+      <h2>{{ isSignUp ? 'Sign Up' : 'Login' }}</h2>
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div *ngIf="isSignUp" class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" formControlName="username">
+          <div *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched" class="error-message">
+            Username is required
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" formControlName="email">
+          <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" class="error-message">
+            Please enter a valid email
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" formControlName="password">
+          <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="error-message">
+            Password must be at least 6 characters
+          </div>
+        </div>
+        <div *ngIf="isSignUp" class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" formControlName="confirmPassword">
+          <div *ngIf="loginForm.get('confirmPassword')?.errors?.['passwordMismatch'] && loginForm.get('confirmPassword')?.touched" class="error-message">
+            Passwords do not match
+          </div>
+        </div>
+        <div *ngIf="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
+        <button type="submit" [disabled]="!loginForm.valid">{{ isSignUp ? 'Sign Up' : 'Login' }}</button>
+      </form>
+      <p (click)="toggleMode()">
+        {{ isSignUp ? 'Already have an account? Login' : 'Need an account? Sign Up' }}
+      </p>
+    </div>
+  </div>
+</div>

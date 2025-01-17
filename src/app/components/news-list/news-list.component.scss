@@ -1,0 +1,544 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background-color: #f4f4f4;
+  font-family: 'Georgia', serif;
+  color: #333;
+}
+
+.news-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #ffffff;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.main-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #2C1810;
+  color: #ffffff;
+  padding: 20px 0;
+  text-align: center;
+  border-bottom: 4px solid #8B4513;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+
+  .logo-container {
+    .logo {
+      font-family: 'Georgia', serif;
+      font-size: 2rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #F5DEB3;
+    }
+  }
+
+  .search-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 700px;
+    margin: 20px auto;
+    position: relative;
+
+    .search-input {
+      width: 100%;
+      padding: 18px 60px 18px 25px;
+      border: 3px solid transparent;
+      border-radius: 50px;
+      font-family: 'Georgia', serif;
+      font-size: 1.1rem;
+      background: linear-gradient(to right, #f9f5f0, #ffffff) padding-box,
+                  linear-gradient(45deg, #8B4513, #D2691E) border-box;
+      color: #333;
+      outline: none;
+      transition: all 0.4s ease;
+      box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+      letter-spacing: 0.5px;
+
+      &:focus {
+        border-color: #D2691E;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        transform: translateY(-3px);
+        background: linear-gradient(to right, #ffffff, #f9f5f0) padding-box,
+                    linear-gradient(45deg, #D2691E, #8B4513) border-box;
+      }
+
+      // Placeholder animation keyframes
+      @keyframes placeholderExit {
+        0% {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        50% {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        100% {
+          opacity: 0;
+          transform: translateX(20px);
+        }
+      }
+
+      @keyframes placeholderEnter {
+        0% {
+          opacity: 0;
+          transform: translateX(20px);
+        }
+        50% {
+          opacity: 0.5;
+          transform: translateX(-10px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      // Placeholder animation classes
+      &.placeholder-exit {
+        animation: placeholderExit 0.3s ease-out forwards;
+      }
+
+      &.placeholder-enter {
+        animation: placeholderEnter 0.3s ease-in forwards;
+      }
+
+      &::placeholder {
+        color: #8B4513;
+        opacity: 0.7;
+        font-style: italic;
+        transition: all 0.3s ease;
+      }
+
+      &:focus::placeholder {
+        opacity: 0.4;
+        transform: translateX(10px);
+      }
+    }
+
+    .search-button, .login-button {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: linear-gradient(45deg, #8B4513, #D2691E);
+      color: #ffffff;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+
+      &:hover {
+        transform: translateY(-50%) scale(1.1) rotate(360deg);
+        background: linear-gradient(45deg, #D2691E, #8B4513);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.25);
+      }
+    }
+
+    .search-button {
+      right: 60px; // Move to make space for login button
+
+      .search-icon {
+        width: 24px;
+        height: 24px;
+        transition: all 0.3s ease;
+        transform-origin: center;
+      }
+
+      &:hover .search-icon {
+        transform: scale(1.2) rotate(15deg);
+        opacity: 0.8;
+      }
+    }
+
+    .login-button {
+      right: 5px;
+
+      .login-icon {
+        width: 24px;
+        height: 24px;
+        transition: all 0.3s ease;
+        transform-origin: center;
+      }
+
+      &:hover .login-icon {
+        transform: scale(1.2) rotate(15deg);
+        opacity: 0.8;
+      }
+    }
+  }
+
+  .search-error {
+    background-color: rgba(255, 0, 0, 0.1);
+    border: 2px solid #D2691E;
+    color: #D2691E;
+    padding: 15px;
+    text-align: center;
+    margin: 20px auto;
+    max-width: 600px;
+    border-radius: 5px;
+    font-family: 'Georgia', serif;
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.category-tabs {
+  position: sticky;
+  top: 80px;
+  z-index: 99;
+  background-color: #f0f0f0;
+  padding: 10px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+
+  button {
+    display: inline-block;
+    margin: 0 15px;
+    padding: 10px 20px;
+    background-color: transparent;
+    border: 2px solid transparent;
+    border-radius: 20px;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Georgia', serif;
+    text-transform: uppercase;
+    font-size: 1rem;
+    letter-spacing: 1px;
+
+    &:hover {
+      background-color: rgba(139, 69, 19, 0.1);
+      border-color: #8B4513;
+    }
+
+    &.active {
+      background-color: #8B4513;
+      color: #ffffff;
+      border-color: #8B4513;
+    }
+  }
+}
+
+.news-grid {
+  flex-grow: 1;
+  padding: 30px;
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+
+  .news-card {
+    transition: all 0.5s ease-out;
+    opacity: 0;
+    transform: translateY(0);
+    
+    // Hover effect
+    &:hover {
+      transform: scale(1.05) !important;
+      z-index: 10;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 1024px) {
+  .news-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .news-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .main-header {
+    .logo-container .logo {
+      font-size: 2.5rem;
+    }
+  }
+}
+
+.news-card {
+  border: 1px solid #ddd;
+  padding: 15px;
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  }
+
+  .card-image {
+    margin-bottom: 15px;
+    border-bottom: 2px solid #8B4513;
+    padding-bottom: 15px;
+
+    img {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+    }
+  }
+
+  .card-content {
+    h3 {
+      font-family: 'Times New Roman', serif;
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+      color: #000;
+      line-height: 1.3;
+    }
+
+    p {
+      font-family: 'Georgia', serif;
+      color: #333;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+      font-size: 0.9rem;
+
+      .source {
+        font-weight: bold;
+        color: #8B4513;
+        text-transform: uppercase;
+      }
+
+      .date {
+        color: #666;
+      }
+    }
+  }
+
+  position: relative;
+  cursor: default;
+
+  .card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    cursor: pointer;
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+
+    .article-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .like-btn, 
+      .dislike-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        width: 24px;
+        height: 24px;
+        transition: transform 0.2s ease;
+
+        svg {
+          width: 100%;
+          height: 100%;
+          fill: #8B4513;
+          transition: fill 0.2s ease;
+        }
+
+        &:hover {
+          transform: scale(1.2);
+        }
+
+        &.liked {
+          svg {
+            fill: #ff0000;
+          }
+        }
+
+        &.disliked {
+          svg {
+            fill: #2C1810;
+          }
+        }
+      }
+    }
+  }
+}
+
+.auth-container {
+  display: none; // Hide for newspaper aesthetic
+}
+
+// Login Modal Styles
+.login-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+
+  &.open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .login-modal-content {
+    background-color: #f9f5f0;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 450px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    position: relative;
+    font-family: 'Georgia', serif;
+    border: 4px solid #8B4513;
+    transform: scale(0.7);
+    opacity: 0;
+    transition: all 0.3s ease;
+
+    &.show {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 30px;
+      color: #8B4513;
+      cursor: pointer;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: #D2691E;
+      }
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 20px;
+
+      h2 {
+        color: #8B4513;
+        font-size: 2rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        color: #8B4513;
+        font-weight: bold;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #8B4513;
+        border-radius: 5px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+
+        &:focus {
+          outline: none;
+          border-color: #D2691E;
+          box-shadow: 0 0 10px rgba(210, 105, 30, 0.2);
+        }
+      }
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(45deg, #8B4513, #D2691E);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+
+      &:hover {
+        background: linear-gradient(45deg, #D2691E, #8B4513);
+        transform: translateY(-3px);
+        box-shadow: 0 7px 14px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .toggle-mode {
+      text-align: center;
+      margin-top: 20px;
+      color: #666;
+
+      a {
+        color: #8B4513;
+        text-decoration: none;
+        font-weight: bold;
+        cursor: pointer;
+        transition: color 0.3s ease;
+
+        &:hover {
+          color: #D2691E;
+        }
+      }
+    }
+  }
+}
+
+// Removed floating-refresh-btn styles

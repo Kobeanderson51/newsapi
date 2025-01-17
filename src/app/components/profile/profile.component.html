@@ -1,0 +1,38 @@
+<div class="profile-container">
+  <div class="main-header">
+    <div class="logo-container">
+      <span class="logo">User Profile</span>
+    </div>
+  </div>
+
+  <div class="profile-content">
+    <div class="user-info" *ngIf="user">
+      <h2>{{ user.name || 'User' }}</h2>
+      <p>{{ user.email }}</p>
+    </div>
+
+    <div class="liked-articles-section">
+      <h3>Liked Articles</h3>
+      <div *ngIf="likedArticles.length === 0" class="no-articles">
+        You haven't liked any articles yet.
+      </div>
+      <div class="article-grid" *ngIf="likedArticles.length > 0">
+        <div *ngFor="let article of likedArticles" class="article-card">
+          <img [src]="article.urlToImage || 'assets/placeholder.png'" alt="Article Image">
+          <div class="article-details">
+            <h4>{{ article.title }}</h4>
+            <p>{{ article.description }}</p>
+            <div class="article-actions">
+              <button (click)="openArticle(article.url)" class="read-article-btn">
+                Read Article
+              </button>
+              <button (click)="removeArticle(article)" class="remove-article-btn">
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

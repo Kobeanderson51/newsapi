@@ -1,0 +1,49 @@
+nav {
+  background-color: #2C1810;
+  color: #F5DEB3;
+  padding: 15px 0;
+  border-bottom: 4px solid #8B4513;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  font-family: 'Georgia', serif;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.nav-logo {
+  color: #F5DEB3;
+  text-decoration: none;
+  font-size: 1.5rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: color 0.3s ease;
+}
+
+.nav-logo:hover {
+  color: #D2691E;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+}
+
+.nav-link {
+  color: #F5DEB3;
+  text-decoration: none;
+  margin-left: 1rem;
+  transition: color 0.3s ease;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.nav-link:hover {
+  color: #D2691E;
+}
