@@ -18,7 +18,12 @@
       </div>
       <div class="article-grid" *ngIf="likedArticles.length > 0">
         <div *ngFor="let article of likedArticles" class="article-card">
-          <img [src]="article.urlToImage || 'assets/placeholder.png'" alt="Article Image">
+          <img 
+            [src]="article.urlToImage" 
+            [alt]="article.title"
+            (error)="usePlaceholderImage($event)"
+            class="article-image"
+          >
           <div class="article-details">
             <h4>{{ article.title }}</h4>
             <p>{{ article.description }}</p>
