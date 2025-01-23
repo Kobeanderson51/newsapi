@@ -7,6 +7,7 @@ import { NewsService, NewsArticle } from '../../services/news.service';
 import { Router } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { HttpClientModule } from '@angular/common/http';
+import { Firestore } from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-news-list',
@@ -195,13 +196,27 @@ export class NewsListComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading: boolean = true;
   loadingError: string | null = null;
 
+  // Flag to track API request limit
+  apiRequestLimitReached = false;
+
   constructor(
     private newsService: NewsService, 
-    private el: ElementRef, 
-    private renderer: Renderer2,
+    private userService: UserService,
+    private firestore: Firestore,
     private router: Router,
-    private userService: UserService
-  ) {}
+    private el: ElementRef, 
+    private renderer: Renderer2
+  ) {
+    // Subscribe to API request limit observable
+    this.newsService.apiRequestLimitReached$.subscribe(limitReached => {
+      this.apiRequestLimitReached = limitReached;
+      
+      // If limit is reached, display error message
+      if (limitReached) {
+        this.displayApiLimitError();
+      }
+    });
+  }
 
   ngOnInit(): void {
     // Load news and check for previously liked/disliked articles
@@ -314,6 +329,12 @@ export class NewsListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadNewsByCategory(category: string): void {
+    // Check if API request limit is reached
+    if (this.apiRequestLimitReached) {
+      this.displayApiLimitError();
+      return;
+    }
+
     console.log(`Loading category: ${category}`);
     
     // Reset loading states
@@ -321,7 +342,7 @@ export class NewsListComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadingError = null;
     this.selectedCategory = category;
 
-    this.newsService.getTopHeadlines('us', category)
+    this.newsService.getTopHeadlines('us', category, 10)
       .subscribe({
         next: (articles: NewsArticle[]) => {
           this.isLoading = false;
@@ -336,7 +357,7 @@ export class NewsListComponent implements OnInit, AfterViewInit, OnDestroy {
             return;
           }
           
-          this.articles = filteredArticles.slice(0, 12);
+          this.articles = filteredArticles;
           setTimeout(() => this.setupScrollAnimation(), 100);
         },
         error: (error) => {
@@ -349,6 +370,12 @@ export class NewsListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   searchNews(): void {
+    // Check if API request limit is reached
+    if (this.apiRequestLimitReached) {
+      this.displayApiLimitError();
+      return;
+    }
+
     // Trim and validate search query
     const query = this.searchQuery.trim();
     
@@ -358,7 +385,7 @@ export class NewsListComponent implements OnInit, AfterViewInit, OnDestroy {
       this.selectedCategory = 'general';
       
       // Call news service to search articles
-      this.newsService.searchNews(query)
+      this.newsService.searchNews(query, 'publishedAt', 10)
         .subscribe({
           next: (articles: NewsArticle[]) => {
             // Filter out [Removed] articles
@@ -371,8 +398,8 @@ export class NewsListComponent implements OnInit, AfterViewInit, OnDestroy {
               return;
             }
             
-            // Limit to 12 articles and update the view
-            this.articles = filteredArticles.slice(0, 12);
+            // Limit to 10 articles and update the view
+            this.articles = filteredArticles;
             
             // Trigger scroll animation after articles are loaded
             setTimeout(() => this.setupScrollAnimation(), 100);
@@ -463,8 +490,14 @@ export class NewsListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private fetchNextArticle() {
+    // Check if API request limit is reached
+    if (this.apiRequestLimitReached) {
+      this.displayApiLimitError();
+      return;
+    }
+
     // Fetch top headlines to get a new article
-    this.newsService.getTopHeadlines('us', this.selectedCategory)
+    this.newsService.getTopHeadlines('us', this.selectedCategory, 10)
       .subscribe({
         next: (articles) => {
           // Filter out already disliked articles
@@ -483,6 +516,67 @@ export class NewsListComponent implements OnInit, AfterViewInit, OnDestroy {
           console.error('Error fetching next article', error);
         }
       });
+  }
+
+  private displayApiLimitError() {
+    // Create error message element
+    const errorDiv = this.renderer.createElement('div');
+    this.renderer.addClass(errorDiv, 'api-limit-error');
+    this.renderer.setProperty(errorDiv, 'innerHTML', `
+      <div class="error-container">
+        <h2>News API Limit Reached</h2>
+        <p>Sorry, we've reached the maximum number of news article requests.</p>
+        <p>Please try again later or upgrade your API plan.</p>
+        <button id="dismiss-error">Dismiss</button>
+      </div>
+    `);
+
+    // Append to body
+    this.renderer.appendChild(document.body, errorDiv);
+
+    // Add dismiss event listener
+    const dismissButton = errorDiv.querySelector('#dismiss-error');
+    dismissButton.addEventListener('click', () => {
+      this.renderer.removeChild(document.body, errorDiv);
+    });
+
+    // Add styles
+    const styleTag = this.renderer.createElement('style');
+    this.renderer.setProperty(styleTag, 'textContent', `
+      .api-limit-error {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+      .error-container {
+        background-color: #ff4136;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        max-width: 500px;
+      }
+      .error-container h2 {
+        margin-bottom: 15px;
+      }
+      .error-container button {
+        margin-top: 15px;
+        padding: 10px 20px;
+        background-color: white;
+        color: #ff4136;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+    `);
+    this.renderer.appendChild(document.head, styleTag);
   }
 
   dislikeArticle(article: NewsArticle) {

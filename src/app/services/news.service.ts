@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of, from } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, from, BehaviorSubject, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { UserService } from './user.service';
 import { Auth } from '@angular/fire/auth';
@@ -41,6 +41,14 @@ export class NewsService {
   private apiBaseUrl = 'https://newsapi.org/v2';
   // Initialize with a default key
   private localStorageKey: string = 'liked_articles_anonymous';
+
+  // New property to track API request limit
+  private apiRequestLimitReached = new BehaviorSubject<boolean>(false);
+  public apiRequestLimitReached$ = this.apiRequestLimitReached.asObservable();
+
+  // Track the number of requests made
+  private requestCount = 0;
+  private readonly MAX_REQUESTS = 100; // NewsAPI free tier limit
 
   constructor(
     private http: HttpClient,
@@ -101,7 +109,26 @@ export class NewsService {
     return { ...fallbackConfig, ...envConfig };
   }
 
-  getTopHeadlines(country: string = 'us', category?: string): Observable<NewsArticle[]> {
+  // Method to check if request limit is reached
+  private checkRequestLimit(): boolean {
+    if (this.requestCount >= this.MAX_REQUESTS) {
+      this.apiRequestLimitReached.next(true);
+      console.error('NewsAPI request limit reached');
+      return true;
+    }
+    return false;
+  }
+
+  getTopHeadlines(
+    country: string = 'us', 
+    category?: string, 
+    pageSize: number = 10  // Default to 10 articles, can be customized
+  ): Observable<NewsArticle[]> {
+    // Check if request limit is reached
+    if (this.checkRequestLimit()) {
+      return of([]);
+    }
+
     // Check if API key is valid
     if (!this.apiKey || this.apiKey === 'YOUR_NEWS_API_KEY_HERE') {
       this.logConfigWarning('NewsAPI Key');
@@ -113,12 +140,15 @@ export class NewsService {
       this.logConfigWarning('NewsAPI Key');
     }
 
-    // Construct URL with optional category
+    // Construct URL with optional category and page size
     const categoryParam = category ? `&category=${category}` : '';
-    const url = `${this.apiBaseUrl}/top-headlines?country=${country}${categoryParam}&apiKey=${this.apiKey}`;
+    const url = `${this.apiBaseUrl}/top-headlines?country=${country}${categoryParam}&pageSize=${pageSize}&apiKey=${this.apiKey}`;
 
     return this.http.get<{ articles: NewsArticle[] }>(url).pipe(
       map(response => {
+        // Increment request count
+        this.requestCount++;
+
         // Filter out articles without a title or image
         const filteredArticles = response.articles.filter(article => 
           article.title && article.urlToImage
@@ -137,23 +167,45 @@ export class NewsService {
           };
         });
       }),
-      catchError(error => {
+      catchError((error: HttpErrorResponse) => {
+        // Check for specific NewsAPI error codes
+        if (error.status === 429) {
+          // Too Many Requests
+          this.apiRequestLimitReached.next(true);
+          console.error('NewsAPI request limit reached');
+        } else if (error.status === 401) {
+          // Unauthorized - likely invalid API key
+          this.logConfigWarning('NewsAPI Key');
+        }
+
         console.error('Error fetching top headlines', error);
         return of([]);
       })
     );
   }
 
-  searchNews(query: string, sortBy: string = 'publishedAt'): Observable<NewsArticle[]> {
+  searchNews(
+    query: string, 
+    sortBy: string = 'publishedAt', 
+    pageSize: number = 10  // Default to 10 articles, can be customized
+  ): Observable<NewsArticle[]> {
+    // Check if request limit is reached
+    if (this.checkRequestLimit()) {
+      return of([]);
+    }
+
     // Log warning if API key is a fallback
     if (this.apiKey === '68c86cf4b0ce4276ba5c6ac693847e48') {
       this.logConfigWarning('NewsAPI Key');
     }
 
-    const url = `${this.apiBaseUrl}/everything?q=${encodeURIComponent(query)}&sortBy=${sortBy}&apiKey=${this.apiKey}`;
+    const url = `${this.apiBaseUrl}/everything?q=${encodeURIComponent(query)}&sortBy=${sortBy}&pageSize=${pageSize}&apiKey=${this.apiKey}`;
     
     return this.http.get<{ articles: NewsArticle[] }>(url).pipe(
       map(response => {
+        // Increment request count
+        this.requestCount++;
+
         // Add unique IDs and check for existing interactions
         return response.articles.map(article => {
           const uniqueId = this.generateArticleId(article);
@@ -167,7 +219,17 @@ export class NewsService {
           };
         });
       }),
-      catchError(error => {
+      catchError((error: HttpErrorResponse) => {
+        // Check for specific NewsAPI error codes
+        if (error.status === 429) {
+          // Too Many Requests
+          this.apiRequestLimitReached.next(true);
+          console.error('NewsAPI request limit reached');
+        } else if (error.status === 401) {
+          // Unauthorized - likely invalid API key
+          this.logConfigWarning('NewsAPI Key');
+        }
+
         console.error('Error searching news', error);
         return of([]);
       })
@@ -434,5 +496,11 @@ export class NewsService {
     this.updateArticleInteractions(interactions);
 
     return of(true);
+  }
+
+  // Reset method for testing or when getting a new API key
+  resetRequestCount() {
+    this.requestCount = 0;
+    this.apiRequestLimitReached.next(false);
   }
 }
