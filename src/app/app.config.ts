@@ -14,7 +14,15 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideClientHydration(),
-    provideFirebaseApp(() => initializeApp(environment.firebase)),
+    provideFirebaseApp(() => {
+      try {
+        console.log('Initializing Firebase with config:', environment.firebase);
+        return initializeApp(environment.firebase);
+      } catch (error) {
+        console.error('Firebase initialization error:', error);
+        throw error;
+      }
+    }),
     provideFirestore(() => getFirestore()),
     provideAuth(() => getAuth()),
     provideAnalytics(() => getAnalytics()),

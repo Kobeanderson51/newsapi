@@ -36,8 +36,8 @@ export interface NewsArticle {
   providedIn: 'root'
 })
 export class NewsService {
-  // Use environment variable for API key
-  private apiKey = environment.newsApiKey;
+  // Use environment variable for API key with fallback
+  private apiKey: string;
   private apiBaseUrl = 'https://newsapi.org/v2';
   // Initialize with a default key
   private localStorageKey: string = 'liked_articles_anonymous';
@@ -48,6 +48,9 @@ export class NewsService {
     private auth: Auth,
     private firestore: Firestore
   ) {
+    // Set API key with fallback
+    this.apiKey = this.getNewsApiKey();
+
     // Update local storage key when auth state changes
     this.auth.onAuthStateChanged(user => {
       this.localStorageKey = user 
@@ -56,23 +59,73 @@ export class NewsService {
     });
   }
 
+  // Method to get NewsAPI key with fallback
+  private getNewsApiKey(): string {
+    // Fallback to a default key if environment variable is not set
+    const fallbackKey = '68c86cf4b0ce4276ba5c6ac693847e48';
+    
+    // Use environment variable if available, otherwise use fallback
+    return environment.newsApiKey || fallbackKey;
+  }
+
+  // Method to log warnings about missing configuration
+  private logConfigWarning(configType: string): void {
+    console.warn(`[NewsService] ${configType} configuration is missing or incomplete. 
+      Please check your Vercel environment variables.`);
+  }
+
+  // Method to get Firebase configuration with fallback
+  private getFirebaseConfig(): any {
+    // Default Firebase configuration (this should be replaced with your actual project's config)
+    const fallbackConfig = {
+      apiKey: "AIzaSyDh3NvhzWcHRhlfHrYIQreIKK6vXjgiS8Q",
+      authDomain: "newsangularapp.firebaseapp.com",
+      projectId: "newsangularapp",
+      storageBucket: "newsangularapp.firebasestorage.app",
+      messagingSenderId: "823520124714",
+      appId: "1:823520124714:web:486c488aab226cccac4853",
+      measurementId: "G-DSNEZQ3FLK"
+    };
+
+    // Check if Firebase config is empty or incomplete
+    const envConfig = environment.firebase;
+    const isConfigEmpty = !envConfig || 
+      Object.values(envConfig).every(val => val === '');
+
+    if (isConfigEmpty) {
+      this.logConfigWarning('Firebase');
+      return fallbackConfig;
+    }
+
+    // Merge environment config with fallback, prioritizing environment config
+    return { ...fallbackConfig, ...envConfig };
+  }
+
   getTopHeadlines(country: string = 'us', category?: string): Observable<NewsArticle[]> {
     // Check if API key is valid
     if (!this.apiKey || this.apiKey === 'YOUR_NEWS_API_KEY_HERE') {
-      console.error('Invalid NewsAPI key. Please set a valid key in environment.ts');
+      this.logConfigWarning('NewsAPI Key');
       return of([]);
     }
 
-    let url = `${this.apiBaseUrl}/top-headlines?country=${country}&apiKey=${this.apiKey}`;
-    
-    if (category) {
-      url += `&category=${category}`;
+    // Log warning if API key is a fallback
+    if (this.apiKey === '68c86cf4b0ce4276ba5c6ac693847e48') {
+      this.logConfigWarning('NewsAPI Key');
     }
+
+    // Construct URL with optional category
+    const categoryParam = category ? `&category=${category}` : '';
+    const url = `${this.apiBaseUrl}/top-headlines?country=${country}${categoryParam}&apiKey=${this.apiKey}`;
 
     return this.http.get<{ articles: NewsArticle[] }>(url).pipe(
       map(response => {
+        // Filter out articles without a title or image
+        const filteredArticles = response.articles.filter(article => 
+          article.title && article.urlToImage
+        );
+
         // Add unique IDs and check for existing interactions
-        return response.articles.map(article => {
+        return filteredArticles.map(article => {
           const uniqueId = this.generateArticleId(article);
           const interactions = this.getArticleInteractionsData();
           
@@ -92,6 +145,11 @@ export class NewsService {
   }
 
   searchNews(query: string, sortBy: string = 'publishedAt'): Observable<NewsArticle[]> {
+    // Log warning if API key is a fallback
+    if (this.apiKey === '68c86cf4b0ce4276ba5c6ac693847e48') {
+      this.logConfigWarning('NewsAPI Key');
+    }
+
     const url = `${this.apiBaseUrl}/everything?q=${encodeURIComponent(query)}&sortBy=${sortBy}&apiKey=${this.apiKey}`;
     
     return this.http.get<{ articles: NewsArticle[] }>(url).pipe(
@@ -123,7 +181,7 @@ export class NewsService {
     
     // Simple hash function to convert string to a unique identifier
     let hash = 0;
-    for (let i = 0; i < idString.length; i++) {
+    for (let i = 0; i <idString.length; i++) {
       const char = idString.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash; // Convert to 32-bit integer
