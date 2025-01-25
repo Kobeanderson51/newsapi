@@ -1,9 +1,7 @@
 import { Routes } from '@angular/router';
 import { NewsListComponent } from './components/news-list/news-list.component';
-import { LoginComponent } from './components/login/login.component';
-import { NavbarComponent } from './components/navbar/navbar.component';
-import { AuthGuard } from './guards/auth.guard';
-import { ProfileComponent } from './components/profile/profile.component';
+import { LoginComponent } from './login/login.component';
+import { ProfileComponent } from './profile/profile.component';
 import { inject } from '@angular/core';
 import { UserService } from './services/user.service';
 import { Router } from '@angular/router';
@@ -31,11 +29,6 @@ export const routes: Routes = [
     component: NewsListComponent,
     canActivate: [authGuard]
   },
-  { 
-    path: 'home', 
-    component: NewsListComponent,
-    canActivate: [authGuard]
-  },
   {
     path: 'profile',
     component: ProfileComponent,
@@ -43,8 +36,8 @@ export const routes: Routes = [
   },
   { 
     path: '', 
-    redirectTo: '/news', 
+    redirectTo: '/login', 
     pathMatch: 'full' 
   },
-  { path: '**', redirectTo: '/news' }
+  { path: '**', redirectTo: '/login' }
 ];

@@ -1,11 +1,4 @@
 <div class="login-page">
-  <nav class="nav-container">
-    <button (click)="navigateHome()" class="nav-logo">NewsApp</button>
-    <div class="nav-links">
-      <button (click)="navigateHome()" class="nav-link">Home</button>
-    </div>
-  </nav>
-  
   <div class="login-container">
     <div class="login-card">
       <h2>{{ isSignUp ? 'Sign Up' : 'Login' }}</h2>
@@ -34,12 +27,22 @@
         <div *ngIf="isSignUp" class="form-group">
           <label for="confirmPassword">Confirm Password</label>
           <input type="password" id="confirmPassword" formControlName="confirmPassword">
-          <div *ngIf="loginForm.get('confirmPassword')?.errors?.['passwordMismatch'] && loginForm.get('confirmPassword')?.touched" class="error-message">
+          <div *ngIf="loginForm.get('confirmPassword')?.touched && loginForm.get('confirmPassword')?.errors" class="error-message">
             Passwords do not match
           </div>
         </div>
         <div *ngIf="errorMessage" class="error-message">
           {{ errorMessage }}
+        </div>
+        <div class="google-signin-container">
+          <button 
+            id="google-signin-btn"
+            type="button" 
+            class="google-signin-button" 
+            (click)="onGoogleSignInClick()">
+            <img src="/assets/google-logo.svg" alt="Google logo" class="google-logo">
+            Sign in with Google
+          </button>
         </div>
         <button type="submit" [disabled]="!loginForm.valid">{{ isSignUp ? 'Sign Up' : 'Login' }}</button>
       </form>
