@@ -1,8 +1,5 @@
 // Fallback configuration
-const defaultNewsApiKey = safeParseEnv(
-  typeof process !== 'undefined' ? process.env['NG_APP_NEWS_API_KEY'] : undefined, 
-  ''
-);
+const defaultNewsApiKey = '';  // Use empty string for production build
 const defaultFirebaseConfig = {
   apiKey: "AIzaSyDh3NvhzWcHRhlfHrYIQreIKK6vXjgiS8Q",
   authDomain: "newsangularapp.firebaseapp.com",

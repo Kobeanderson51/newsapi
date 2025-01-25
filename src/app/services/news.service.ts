@@ -73,7 +73,9 @@ export class NewsService {
     const fallbackKey = '68c86cf4b0ce4276ba5c6ac693847e48';
     
     // Use environment variable if available, otherwise use fallback
-    return environment.newsApiKey || fallbackKey;
+    return environment.newsApiKey || 
+           (typeof window !== 'undefined' && (window as any).newsApiKey) || 
+           fallbackKey;
   }
 
   // Method to log warnings about missing configuration
