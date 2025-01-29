@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, from, BehaviorSubject, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { UserService } from './user.service';
 import { Auth } from '@angular/fire/auth';
 import { 
@@ -482,22 +482,47 @@ export class NewsService {
     
     // Remove from liked articles in Firestore
     const userDocRef = doc(this.firestore, `users/${user.uid}`);
-    updateDoc(userDocRef, {
-      savedArticles: arrayRemove({ id: articleId })
-    }).catch(error => {
-      console.error('Error removing article from profile', error);
-    });
+    
+    // First get the current saved articles
+    return from(getDoc(userDocRef)).pipe(
+      switchMap(docSnap => {
+        if (docSnap.exists()) {
+          const savedArticles = docSnap.data()['savedArticles'] || [];
+          // Find the article to remove
+          const articleToRemove = savedArticles.find((article: NewsArticle) => 
+            article.id === articleId || this.generateArticleId(article) === articleId
+          );
 
-    // Remove from liked interactions
-    const likedIndex = interactions.liked.indexOf(articleId);
-    if (likedIndex > -1) {
-      interactions.liked.splice(likedIndex, 1);
-    }
+          if (articleToRemove) {
+            // Remove the article from Firestore
+            return from(updateDoc(userDocRef, {
+              savedArticles: arrayRemove(articleToRemove)
+            })).pipe(
+              map(() => {
+                // Remove from liked interactions
+                const likedIndex = interactions.liked.indexOf(articleId);
+                if (likedIndex > -1) {
+                  interactions.liked.splice(likedIndex, 1);
+                }
 
-    // Update interactions
-    this.updateArticleInteractions(interactions);
-
-    return of(true);
+                // Update interactions
+                this.updateArticleInteractions(interactions);
+                return true;
+              }),
+              catchError(error => {
+                console.error('Error removing article from profile', error);
+                return of(false);
+              })
+            );
+          }
+        }
+        return of(false);
+      }),
+      catchError(error => {
+        console.error('Error getting user document', error);
+        return of(false);
+      })
+    );
   }
 
   // Reset method for testing or when getting a new API key

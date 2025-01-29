@@ -1,5 +1,5 @@
 // Fallback configuration
-const defaultNewsApiKey = '';  // Use empty string for production build
+const defaultNewsApiKey = '68c86cf4b0ce4276ba5c6ac693847e48';  // Production NewsAPI key
 const defaultFirebaseConfig = {
   apiKey: "AIzaSyDh3NvhzWcHRhlfHrYIQreIKK6vXjgiS8Q",
   authDomain: "newsangularapp.firebaseapp.com",

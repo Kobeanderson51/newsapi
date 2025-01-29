@@ -2,8 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { Auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from '@angular/fire/auth';
-import { Firestore, doc, setDoc, collection, query, where, getDocs } from '@angular/fire/firestore';
+import { Auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, UserCredential, onAuthStateChanged, getAuth, setPersistence, browserLocalPersistence } from '@angular/fire/auth';
+import { Firestore, doc, setDoc } from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-login',
@@ -31,11 +31,103 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  ngOnInit() {
+  async ngOnInit() {
     // Add custom validator after form creation
     this.loginForm.setValidators(this.validateForm.bind(this));
     this.updateFormValidation();
-    this.createAdminProfileIfNeeded();
+
+    // Set persistence
+    try {
+      const auth = getAuth();
+      await setPersistence(auth, browserLocalPersistence);
+    } catch (error) {
+      console.error('Error setting auth persistence:', error);
+    }
+
+    // Subscribe to auth state changes
+    onAuthStateChanged(this.auth, (user) => {
+      if (user) {
+        console.log('User is signed in:', user.email);
+        this.router.navigate(['/news']);
+      }
+    });
+  }
+
+  // Method for Google Sign-In click
+  async onGoogleSignInClick() {
+    console.log('Google Sign-In Button Clicked');
+    
+    const googleSignInButton = document.getElementById('google-signin-btn');
+    if (googleSignInButton) {
+      googleSignInButton.setAttribute('disabled', 'true');
+    }
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+
+      // Try popup sign-in
+      const result = await signInWithPopup(this.auth, provider);
+      await this.handleSignInSuccess(result);
+    } catch (error: any) {
+      console.error('Google Sign-In Error:', error);
+      this.handleSignInError(error);
+    } finally {
+      if (googleSignInButton) {
+        googleSignInButton.removeAttribute('disabled');
+      }
+    }
+  }
+
+  // Handle successful sign-in
+  private async handleSignInSuccess(result: UserCredential) {
+    try {
+      if (result.user) {
+        // Update user document in Firestore
+        const userRef = doc(this.firestore, 'users', result.user.uid);
+        await setDoc(userRef, {
+          email: result.user.email,
+          displayName: result.user.displayName,
+          photoURL: result.user.photoURL,
+          lastSignIn: new Date(),
+          updatedAt: new Date()
+        }, { merge: true });
+
+        // Navigate to news page
+        this.router.navigate(['/news']);
+      }
+    } catch (error) {
+      console.error('Error updating user document:', error);
+      this.errorMessage = 'Failed to update user profile. Please try again.';
+    }
+  }
+
+  // Handle sign-in errors
+  private handleSignInError(error: { code?: string, message?: string }) {
+    console.error('Sign-in error details:', error);
+    
+    let errorMessage = 'Failed to sign in with Google. Please try again.';
+    
+    switch (error.code) {
+      case 'auth/popup-blocked':
+        errorMessage = 'Sign-in popup was blocked. Please allow popups for this site.';
+        break;
+      case 'auth/popup-closed-by-user':
+        errorMessage = 'Sign-in was cancelled.';
+        break;
+      case 'auth/unauthorized-domain':
+        errorMessage = 'This domain is not authorized for Google Sign-In. Please contact support.';
+        break;
+      case 'auth/operation-not-allowed':
+        errorMessage = 'Google Sign-In is not enabled. Please contact support.';
+        break;
+      default:
+        errorMessage = error.message || 'An unexpected error occurred during sign-in.';
+    }
+
+    this.errorMessage = errorMessage;
   }
 
   // Custom form validation method
@@ -86,119 +178,6 @@ export class LoginComponent implements OnInit {
     this.loginForm.reset(); // Reset the form
   }
 
-  // Method for Google Sign-In click
-  onGoogleSignInClick() {
-    console.log('Google Sign-In Button Clicked');
-    
-    // Disable button to prevent multiple clicks
-    const googleSignInButton = document.getElementById('google-signin-btn');
-    if (googleSignInButton) {
-      googleSignInButton.setAttribute('disabled', 'true');
-    }
-
-    // Add a small delay to ensure UI updates
-    setTimeout(() => {
-      this.signInWithGoogle().finally(() => {
-        // Re-enable button after sign-in attempt
-        if (googleSignInButton) {
-          googleSignInButton.removeAttribute('disabled');
-        }
-      });
-    }, 100);
-  }
-
-  // Method for Google Sign-In
-  async signInWithGoogle() {
-    try {
-      const provider = new GoogleAuthProvider();
-      
-      // Configure provider for additional scopes if needed
-      provider.addScope('profile');
-      provider.addScope('email');
-
-      // Try popup first, fallback to redirect if popup fails
-      try {
-        const userCredential = await signInWithPopup(this.auth, provider);
-        
-        // Optional: Create user document in Firestore
-        if (userCredential.user) {
-          const userRef = doc(this.firestore, 'users', userCredential.user.uid);
-          await setDoc(userRef, {
-            email: userCredential.user.email,
-            displayName: userCredential.user.displayName,
-            photoURL: userCredential.user.photoURL,
-            createdAt: new Date()
-          }, { merge: true });
-        }
-
-        // Navigate to news page
-        this.router.navigate(['/news']);
-      } catch (popupError) {
-        console.warn('Popup sign-in failed, falling back to redirect', popupError);
-        
-        // Fallback to redirect method
-        await signInWithRedirect(this.auth, provider);
-      }
-    } catch (error: any) {
-      console.error('Google Sign-In Error', error);
-      
-      // Detailed error handling
-      let errorMessage = 'Failed to sign in with Google. Please try again.';
-      
-      switch (error.code) {
-        case 'auth/popup-blocked':
-          errorMessage = 'Google Sign-In popup was blocked. Please allow popups for this site.';
-          break;
-        case 'auth/popup-closed-by-user':
-          errorMessage = 'Google Sign-In was cancelled. Please try again.';
-          break;
-        case 'auth/unauthorized-domain':
-          errorMessage = 'This domain is not authorized for Google Sign-In. Please contact support.';
-          break;
-        case 'auth/invalid-credential':
-          errorMessage = 'Invalid credentials. Please try a different sign-in method.';
-          break;
-        case 'auth/operation-not-allowed':
-          errorMessage = 'Google Sign-In is not enabled. Please enable Google Sign-In in Firebase Authentication settings.';
-          break;
-        default:
-          errorMessage = error.message || 'An unexpected error occurred during Google Sign-In.';
-      }
-
-      this.errorMessage = errorMessage;
-      console.error('Detailed Google Sign-In Error:', {
-        code: error.code,
-        message: error.message,
-        fullError: error
-      });
-
-      // Optional: Show error to user
-      alert(errorMessage);
-    }
-  }
-
-  // Create admin profile if it doesn't exist
-  async createAdminProfileIfNeeded() {
-    try {
-      // Try to sign in with admin credentials
-      await signInWithEmailAndPassword(this.auth, 'admin@newsapp.com', 'admin123');
-      console.log('Admin profile already exists');
-      return;
-    } catch (error) {
-      // If sign in fails, create the admin profile
-      try {
-        const userCredential = await createUserWithEmailAndPassword(
-          this.auth, 
-          'admin@newsapp.com', 
-          'admin123'
-        );
-        console.log('Admin profile created');
-      } catch (createError) {
-        console.error('Error creating admin profile', createError);
-      }
-    }
-  }
-
   // Submit form method
   async onSubmit() {
     if (this.loginForm.invalid) {
@@ -231,6 +210,28 @@ export class LoginComponent implements OnInit {
     } catch (error) {
       console.error('Authentication Error', error);
       this.errorMessage = 'Authentication failed. Please check your credentials.';
+    }
+  }
+
+  // Create admin profile if it doesn't exist
+  async createAdminProfileIfNeeded() {
+    try {
+      // Try to sign in with admin credentials
+      await signInWithEmailAndPassword(this.auth, 'admin@newsapp.com', 'admin123');
+      console.log('Admin profile already exists');
+      return;
+    } catch (error) {
+      // If sign in fails, create the admin profile
+      try {
+        const userCredential = await createUserWithEmailAndPassword(
+          this.auth, 
+          'admin@newsapp.com', 
+          'admin123'
+        );
+        console.log('Admin profile created');
+      } catch (createError) {
+        console.error('Error creating admin profile', createError);
+      }
     }
   }
 }

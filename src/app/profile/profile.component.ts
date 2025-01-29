@@ -106,6 +106,22 @@ export class ProfileComponent implements OnInit, OnDestroy {
     const sub = this.newsService.removeArticleFromProfile(articleId).subscribe({
       next: (success) => {
         if (success) {
+          // Refresh the liked articles list
+          this.likedArticles$ = this.currentUser$.pipe(
+            switchMap(user => {
+              if (user) {
+                return this.newsService.getLikedArticles().pipe(
+                  catchError(error => {
+                    console.error('Error fetching liked articles', error);
+                    this.errorMessage = 'Failed to load liked articles';
+                    return of([]);
+                  })
+                );
+              }
+              return of([]);
+            })
+          );
+          
           this.successMessage = 'Article removed successfully';
           this.errorMessage = '';
         } else {
