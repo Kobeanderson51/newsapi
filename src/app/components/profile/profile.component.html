@@ -1,14 +1,70 @@
+<app-navbar></app-navbar>
 <div class="profile-container">
-  <div class="main-header">
-    <div class="logo-container">
-      <span class="logo">User Profile</span>
+  <div class="profile-card" *ngIf="!loading && userProfile">
+    <div class="profile-header">
+      <h1 class="profile-username">{{ userProfile.username || 'Anonymous User' }}</h1>
     </div>
-  </div>
+    
+    <div class="account-settings">
+      <h2>Account Settings</h2>
+      <form [formGroup]="accountSettingsForm" (ngSubmit)="updateAccountSettings()">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input 
+            type="text" 
+            id="username" 
+            formControlName="username" 
+            placeholder="Enter new username"
+          >
+          <div *ngIf="accountSettingsForm.get('username')?.invalid && accountSettingsForm.get('username')?.touched" class="error-message">
+            Username must be 3-20 characters long and contain only letters, numbers, and underscores.
+          </div>
+        </div>
 
-  <div class="profile-content">
-    <div class="user-info" *ngIf="user">
-      <h2>{{ user.name || 'User' }}</h2>
-      <p>{{ user.email }}</p>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input 
+            type="email" 
+            id="email" 
+            formControlName="email" 
+            placeholder="Enter new email"
+          >
+          <div *ngIf="accountSettingsForm.get('email')?.invalid && accountSettingsForm.get('email')?.touched" class="error-message">
+            Please enter a valid email address.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="currentPassword">Current Password</label>
+          <input 
+            type="password" 
+            id="currentPassword" 
+            formControlName="currentPassword" 
+            placeholder="Current password (required to make changes)"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="newPassword">New Password (optional)</label>
+          <input 
+            type="password" 
+            id="newPassword" 
+            formControlName="newPassword" 
+            placeholder="Leave blank if not changing"
+          >
+          <div *ngIf="accountSettingsForm.get('newPassword')?.invalid && accountSettingsForm.get('newPassword')?.touched" class="error-message">
+            Password must be at least 6 characters long.
+          </div>
+        </div>
+
+        <button 
+          type="submit" 
+          class="update-button" 
+          [disabled]="accountSettingsForm.invalid"
+        >
+          Update Account
+        </button>
+      </form>
     </div>
 
     <div class="liked-articles-section">
@@ -19,9 +75,8 @@
       <div class="article-grid" *ngIf="likedArticles.length > 0">
         <div *ngFor="let article of likedArticles" class="article-card">
           <img 
-            [src]="article.urlToImage" 
+            [src]="article.urlToImage || 'assets/default-news-image.png'" 
             [alt]="article.title"
-            (error)="usePlaceholderImage($event)"
             class="article-image"
           >
           <div class="article-details">
@@ -39,5 +94,41 @@
         </div>
       </div>
     </div>
+
+    <div class="popular-articles-section">
+      <h3>Check Out What Others Are Liking</h3>
+      <div *ngIf="popularArticles.length === 0" class="no-articles">
+        No popular articles yet.
+      </div>
+      <div class="article-grid" *ngIf="popularArticles.length > 0">
+        <div *ngFor="let article of popularArticles" class="article-card">
+          <img 
+            [src]="article.urlToImage || 'assets/default-news-image.png'" 
+            [alt]="article.title"
+            class="article-image"
+          >
+          <div class="article-details">
+            <h4>{{ article.title }}</h4>
+            <p>{{ article.description }}</p>
+            <div class="article-actions">
+              <button (click)="openArticle(article.url)" class="read-article-btn">
+                Read Article
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button (click)="logout()" class="logout-button">Logout</button>
+  </div>
+
+  <div *ngIf="loading" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Loading profile...</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
   </div>
 </div>

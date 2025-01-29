@@ -8,8 +8,14 @@ import { NavbarComponent } from '../navbar/navbar.component';
 import { NewsService } from '../../services/news.service';
 import { NewsArticle } from '../../services/news.service';
 
+interface PopularArticle extends NewsArticle {
+  likeCount: number;
+}
+
 @Component({
   selector: 'app-profile',
+  templateUrl: './profile.component.html',
+  styleUrls: ['./profile.component.css'],
   standalone: true,
   imports: [CommonModule, NavbarComponent, ReactiveFormsModule],
   template: `
@@ -114,6 +120,30 @@ import { NewsArticle } from '../../services/news.service';
       </div>
       <div *ngIf="likedArticles.length === 0" class="no-liked-articles">
         No liked articles yet.
+      </div>
+
+      <div class="popular-articles-section" *ngIf="popularArticles.length > 0">
+        <h2>Popular Articles</h2>
+        <div class="popular-articles-grid">
+          <div *ngFor="let article of popularArticles" class="article-card">
+            <div class="article-image-container" (click)="openArticle(article.url)">
+              <img *ngIf="article.urlToImage" [src]="article.urlToImage" alt="Article Image" class="article-image">
+            </div>
+            <div class="article-details">
+              <h3 (click)="openArticle(article.url)">{{ article.title }}</h3>
+              <p class="article-description" (click)="showLikedMessage()">{{ article.description }}</p>
+              <div class="article-footer">
+                <span class="liked-badge">
+                  {{ article.likeCount }} {{ article.likeCount === 1 ? 'like' : 'likes' }}
+                  <span *ngIf="article.likeCount >= 3">🔥</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="popularArticles.length === 0" class="no-popular-articles">
+        No popular articles yet.
       </div>
     </div>
   `,
@@ -300,6 +330,22 @@ import { NewsArticle } from '../../services/news.service';
       color: #666;
     }
 
+    .popular-articles-section {
+      margin-top: 30px;
+      text-align: left;
+    }
+
+    .popular-articles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .no-popular-articles {
+      margin-top: 30px;
+      color: #666;
+    }
+
     .account-settings {
       background-color: #f4f6f7;
       border-radius: 8px;
@@ -364,6 +410,35 @@ export class ProfileComponent implements OnInit {
   loading: boolean = true;
   errorMessage: string | null = null;
   likedArticles: NewsArticle[] = [];
+  popularArticles: NewsArticle[] = [
+    // {
+    //   title: "SpaceX Successfully Launches New Satellite Constellation",
+    //   description: "SpaceX has successfully launched its latest batch of satellites, expanding global internet coverage and marking another milestone in space technology.",
+    //   url: "https://example.com/spacex-launch",
+    //   urlToImage: "https://images.unsplash.com/photo-1516849677043-ef67c9557e16?w=500",
+    //   publishedAt: new Date().toISOString(),
+    //   content: "",
+    //   source: { id: null, name: "Space News" }
+    // },
+    // {
+    //   title: "Breakthrough in Quantum Computing Achieved",
+    //   description: "Scientists announce a major breakthrough in quantum computing, potentially revolutionizing the future of computing technology.",
+    //   url: "https://example.com/quantum-computing",
+    //   urlToImage: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=500",
+    //   publishedAt: new Date().toISOString(),
+    //   content: "",
+    //   source: { id: null, name: "Tech Daily" }
+    // },
+    // {
+    //   title: "New AI Model Can Predict Weather Patterns with 95% Accuracy",
+    //   description: "Researchers develop a groundbreaking AI model that can predict weather patterns with unprecedented accuracy, potentially transforming meteorology.",
+    //   url: "https://example.com/ai-weather",
+    //   urlToImage: "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=500",
+    //   publishedAt: new Date().toISOString(),
+    //   content: "",
+    //   source: { id: null, name: "AI News" }
+    // }
+  ];
   accountSettingsForm: FormGroup;
 
   constructor(

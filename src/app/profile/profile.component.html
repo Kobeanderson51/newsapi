@@ -143,5 +143,21 @@
         <p class="no-articles-message">No liked articles yet.</p>
       </ng-template>
     </div>
+
+    <div class="popular-articles-section">
+      <h3>Check Out What Others Are Liking</h3>
+      <div class="articles-grid">
+        <div *ngFor="let article of popularArticles" class="article-card">
+          <img [src]="article.urlToImage || 'assets/default-news-image.png'" [alt]="article.title" class="article-image">
+          <div class="article-details">
+            <h4>{{ article.title }}</h4>
+            <p>{{ article.description }}</p>
+            <div class="article-actions">
+              <button (click)="openArticle(article.url)" class="read-more-btn">Read Article</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

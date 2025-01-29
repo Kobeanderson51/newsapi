@@ -20,7 +20,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
   // Observables
   currentUser$: Observable<any>;
   likedArticles$: Observable<NewsArticle[]>;
-  
+  popularArticles: NewsArticle[] = [];
+
   // Form controls
   profileForm: FormGroup;
   passwordForm: FormGroup;
@@ -84,11 +85,63 @@ export class ProfileComponent implements OnInit, OnDestroy {
     );
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.loadUserProfile();
+    this.loadLikedArticles();
+    this.loadRandomArticles();
+  }
 
   ngOnDestroy() {
     // Unsubscribe from all subscriptions
     this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+
+  private loadUserProfile() {
+    // Populate profile form
+    this.subscriptions.push(
+      this.currentUser$.subscribe(user => {
+        if (user) {
+          this.profileForm.patchValue({
+            displayName: user.displayName || '',
+            email: user.email || ''
+          });
+        }
+      })
+    );
+  }
+
+  private loadLikedArticles() {
+    // Liked articles observable
+    this.likedArticles$ = this.currentUser$.pipe(
+      switchMap(user => {
+        if (user) {
+          return this.newsService.getLikedArticles().pipe(
+            catchError(error => {
+              console.error('Error fetching liked articles', error);
+              this.errorMessage = 'Failed to load liked articles';
+              return of([]);
+            })
+          );
+        }
+        return of([]);
+      })
+    );
+  }
+
+  private loadRandomArticles() {
+    // Get top headlines and randomly select 3
+    this.newsService.getTopHeadlines('us', undefined, 20).subscribe({
+      next: (articles) => {
+        // Shuffle the articles array
+        const shuffled = articles.sort(() => 0.5 - Math.random());
+        // Take the first 3 articles
+        this.popularArticles = shuffled.slice(0, 3);
+      },
+      error: (error) => {
+        console.error('Error loading random articles:', error);
+        this.errorMessage = 'Failed to load popular articles';
+      }
+    });
   }
 
   // Custom validator for password match
@@ -213,5 +266,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
       console.error('Logout Error', error);
       this.errorMessage = 'Failed to log out. Please try again.';
     }
+  }
+
+  // Method to open article in new tab
+  openArticle(url: string): void {
+    window.open(url, '_blank');
   }
 }
